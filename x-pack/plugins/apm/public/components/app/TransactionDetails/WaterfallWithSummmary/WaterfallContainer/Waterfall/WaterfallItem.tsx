@@ -76,6 +76,8 @@ const ItemText = styled.span`
 interface IWaterfallItemProps {
   timelineMargins: Margins;
   totalDuration?: number;
+  totalAllocations?: number;
+  showAllocations: boolean;
   item: IWaterfallItem;
   color: string;
   isSelected: boolean;
@@ -167,18 +169,33 @@ function NameLabel({ item }: { item: IWaterfallItem }) {
 export function WaterfallItem({
   timelineMargins,
   totalDuration,
+  totalAllocations,
+  showAllocations,
   item,
   color,
   isSelected,
   errorCount,
   onClick,
 }: IWaterfallItemProps) {
-  if (!totalDuration) {
+  if (!totalDuration || !totalAllocations) {
     return null;
   }
 
-  const width = (item.duration / totalDuration) * 100;
-  const left = ((item.offset + item.skew) / totalDuration) * 100;
+  // console.log(item)
+
+  let width;
+  let left;
+  if (showAllocations) {
+    const allocations = item.labels?.allocations as number;
+    width = (allocations / totalAllocations) * 100;
+    const offset =
+      (item.labels?.snapshot as number) -
+      (item.labels?.transaction_snapshot as number);
+    left = (offset / totalAllocations) * 100;
+  } else {
+    width = (item.duration / totalDuration) * 100;
+    left = ((item.offset + item.skew) / totalDuration) * 100;
+  }
 
   const tooltipContent = i18n.translate(
     'xpack.apm.transactionDetails.errorsOverviewLinkTooltip',
@@ -197,7 +214,11 @@ export function WaterfallItem({
       onClick={onClick}
     >
       <ItemBar // using inline styles instead of props to avoid generating a css class for each item
-        style={{ left: `${left}%`, width: `${width}%` }}
+        style={{
+          left: `${left}%`,
+          width: `${width}%`,
+          transition: 'all .2s ease-in-out',
+        }}
         color={color}
         type={item.docType}
       />
@@ -225,7 +246,13 @@ export function WaterfallItem({
             </EuiToolTip>
           </ErrorOverviewLink>
         ) : null}
-        <Duration item={item} />
+        {showAllocations ? (
+          <EuiText color="subdued" size="xs">
+            {item.labels?.allocations as number} allocs
+          </EuiText>
+        ) : (
+          <Duration item={item} />
+        )}
         {item.docType === 'span' && <SyncBadge sync={item.doc.span.sync} />}
       </ItemText>
     </Container>

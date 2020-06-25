@@ -4,10 +4,10 @@
  * you may not use this file except in compliance with the Elastic License.
  */
 
-import { EuiCallOut } from '@elastic/eui';
+import { EuiCallOut, EuiButtonGroup } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { Location } from 'history';
-import React from 'react';
+import React, { useState } from 'react';
 // @ts-ignore
 import { StickyContainer } from 'react-sticky';
 import styled from 'styled-components';
@@ -75,11 +75,26 @@ export const Waterfall: React.FC<Props> = ({
 }) => {
   const itemContainerHeight = 58; // TODO: This is a nasty way to calculate the height of the svg element. A better approach should be found
   const waterfallHeight = itemContainerHeight * waterfall.items.length;
+  const totalAllocations = waterfall.items[0]?.labels?.allocations as number;
 
   const { serviceColors, duration } = waterfall;
 
   const agentMarks = getAgentMarks(waterfall.entryTransaction);
   const errorMarks = getErrorMarks(waterfall.errorItems, serviceColors);
+
+  const sections = [
+    {
+      id: 'durations',
+      label: 'Durations',
+      iconType: 'clock',
+    },
+    {
+      id: 'allocations',
+      label: 'Allocations',
+      iconType: 'memory',
+    },
+  ];
+  const [sectionId, setSectionId] = useState('durations');
 
   const renderWaterfallItem = (item: IWaterfallItem) => {
     const errorCount =
@@ -94,6 +109,8 @@ export const Waterfall: React.FC<Props> = ({
         color={serviceColors[item.doc.service.name]}
         item={item}
         totalDuration={duration}
+        totalAllocations={totalAllocations}
+        showAllocations={sectionId === 'allocations'}
         isSelected={item.id === waterfallItemId}
         errorCount={errorCount}
         onClick={() => toggleFlyout({ item, location })}
@@ -115,9 +132,21 @@ export const Waterfall: React.FC<Props> = ({
         />
       )}
       <StickyContainer>
+        <div style={{ position: 'relative', zIndex: 99999 }}>
+          <EuiButtonGroup
+            legend="Show"
+            options={sections}
+            idSelected={sectionId}
+            onChange={(id) => {
+              setSectionId(id);
+            }}
+            buttonSize="m"
+          />
+        </div>
+
         <Timeline
           marks={[...agentMarks, ...errorMarks]}
-          xMax={duration}
+          xMax={sectionId === 'durations' ? duration : totalAllocations}
           height={waterfallHeight}
           margins={TIMELINE_MARGINS}
         />

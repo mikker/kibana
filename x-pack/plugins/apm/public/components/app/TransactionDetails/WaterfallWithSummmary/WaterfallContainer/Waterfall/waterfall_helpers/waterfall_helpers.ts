@@ -65,6 +65,12 @@ interface IWaterfallItemBase<T, U> {
    * skew from timestamp in us
    */
   skew: number;
+
+  labels:
+    | {
+        [key: string]: string | number | boolean;
+      }
+    | undefined;
 }
 
 export type IWaterfallTransaction = IWaterfallItemBase<
@@ -83,6 +89,7 @@ function getTransactionItem(transaction: Transaction): IWaterfallTransaction {
     id: transaction.transaction.id,
     parentId: transaction.parent?.id,
     duration: transaction.transaction.duration.us,
+    labels: transaction.labels,
     offset: 0,
     skew: 0,
   };
@@ -95,6 +102,7 @@ function getSpanItem(span: Span): IWaterfallSpan {
     id: span.span.id,
     parentId: span.parent?.id,
     duration: span.span.duration.us,
+    labels: span.labels,
     offset: 0,
     skew: 0,
   };
@@ -116,6 +124,7 @@ function getErrorItem(
     parent,
     parentId: parent?.id,
     offset: error.timestamp.us - entryTimestamp,
+    labels: error.labels,
     skew: 0,
     duration: 0,
   };
